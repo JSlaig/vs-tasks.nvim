@@ -1,5 +1,5 @@
 -- Floaterm integration for vs-tasks.nvim
--- Simple integration using FloatermOpenInNewTerm command
+-- Uses FloatermSendNew to send command to a new terminal
 
 local initialized = false
 
@@ -11,11 +11,8 @@ local function Floaterm_process(command)
     initialized = true
   end
 
-  -- Open a new Floaterm terminal (floaterm is pre-configured)
-  vim.cmd("FloatermOpenInNewTerm")
-
-  -- Put the command in the clipboard (register "*")
-  vim.fn.setreg("*", command)
+  -- Send command to a new Floaterm terminal
+  vim.cmd("FloatermSendNew " .. command)
 end
 
 return { Process = Floaterm_process }
