@@ -215,7 +215,7 @@ local spawn_job = function(command, on_stdout, on_stderr, on_exit)
 		-- For Floaterm, we use the Floaterm module to open the terminal
 		-- We can't track job_id the same way as native terminal
 		local Floaterm = require("vstask.Floaterm")
-		Floaterm.Process(command, "current", {})
+		Floaterm.Process(command)
 		return nil -- Floaterm manages its own terminal
 	end
 	
@@ -389,14 +389,7 @@ M.start_job = function(opts)
 		-- For Floaterm, we open the terminal using the Floaterm module
 		if options.terminal == true then
 			local Floaterm = require("vstask.Floaterm")
-			local opts = {}
-			if options.direction ~= "current" then
-				opts[options.direction] = { 
-					direction = options.direction,
-					size = Opts.get_size(options.direction, Term_opts)
-				}
-			end
-			Floaterm.Process(options.command, options.direction, opts)
+			Floaterm.Process(options.command)
 		else
 			-- For background jobs with Floaterm, just run the command
 			-- without opening a terminal window
