@@ -19,9 +19,9 @@ local function Floaterm_process(command)
 
   -- Wait 1 second then paste and press Enter
   vim.defer_fn(function()
-    -- Enter insert mode, paste, and press Enter
+    -- Enter insert mode, paste from * register, and press Enter
     vim.cmd("startinsert")
-    vim.fn.feedkeys("*p", "n")
+    vim.fn.feedkeys("<C-r>*", "n")
     vim.fn.feedkeys("\r", "n")
   end, 1000)
 end
