@@ -16,14 +16,6 @@ local function Floaterm_process(command)
 
   -- Put the command in the clipboard (register "*")
   vim.fn.setreg("*", command)
-
-  -- Wait 1 second then paste and press Enter
-  vim.defer_fn(function()
-    -- Enter insert mode, paste from * register, and press Enter
-    vim.cmd("startinsert")
-    vim.fn.feedkeys("<C-r>*", "n")
-    vim.fn.feedkeys("\r", "n")
-  end, 1000)
 end
 
 return { Process = Floaterm_process }
