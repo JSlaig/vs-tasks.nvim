@@ -1,6 +1,7 @@
 local Opts = require("vstask.Opts")
 local Parse = require("vstask.Parse")
 local quickfix = require("vstask.Quickfix")
+local TerminalManager = require("vstask.TerminalManager")
 local M = {}
 
 local background_jobs = {}
@@ -199,6 +200,24 @@ M.get_buffer_content = function(buf_job_id)
 end
 
 local spawn_job = function(command, on_stdout, on_stderr, on_exit)
+	local terminal_type = TerminalManager.get_terminal_type()
+	
+	if terminal_type == "nvim" then
+		-- Use native nvim terminal
+		return vim.fn.termopen(command, {
+			on_stdout = on_stdout,
+			on_stderr = on_stderr,
+			on_exit = on_exit,
+		})
+	elseif terminal_type == "toggleterm" or terminal_type == "floaterm" then
+		-- For external terminals, we open them but can't track job_id the same way
+		-- We'll return a synthetic ID and handle tracking differently
+		local synthetic_id = math.random(10000, 99999) -- Simple synthetic ID
+		TerminalManager.open_terminal(command, { direction = "current" })
+		return synthetic_id
+	end
+	
+	-- Fallback to native terminal
 	return vim.fn.termopen(command, {
 		on_stdout = on_stdout,
 		on_stderr = on_stderr,
@@ -335,18 +354,24 @@ M.start_job = function(opts)
 		end
 	end
 
-	job_id = spawn_job(options.command, on_stdout, on_stderr, on_exit)
-
-	if options.terminal ~= true then
-		-- return to current buf if it's still valid
-		if vim.api.nvim_buf_is_valid(current_buf) then
-			vim.api.nvim_set_current_buf(current_buf)
+	local terminal_type = TerminalManager.get_terminal_type()
+	
+	if terminal_type == "nvim" then
+		-- Native nvim terminal - full tracking support
+		job_id = spawn_job(options.command, on_stdout, on_stderr, on_exit)
+		
+		if job_id <= 0 then
+			notify("Failed to start background job: " .. options.command, vim.log.levels.ERROR)
+			return
 		end
-	end
 
-	if job_id <= 0 then
-		notify("Failed to start background job: " .. options.command, vim.log.levels.ERROR)
-	else
+		if options.terminal ~= true then
+			-- return to current buf if it's still valid
+			if vim.api.nvim_buf_is_valid(current_buf) then
+				vim.api.nvim_set_current_buf(current_buf)
+			end
+		end
+		
 		background_jobs[job_id] = {
 			id = job_id,
 			command = options.command,
@@ -357,6 +382,51 @@ M.start_job = function(opts)
 			end_time = 0,
 			exit_code = -1,
 		}
+	else
+		-- External terminal (ToggleTerm/Floaterm) - limited tracking
+		-- For external terminals, we just open the terminal and run the command
+		-- We can't track job status or get exit codes easily
+		notify("Starting job in " .. terminal_type .. " terminal: " .. options.label, vim.log.levels.INFO)
+		
+		-- For external terminals, we still need to open the terminal
+		if options.terminal == true then
+			TerminalManager.open_terminal(options.command, { 
+				direction = options.direction,
+				size = Opts.get_size(options.direction, Term_opts)
+			})
+		else
+			-- For background jobs with external terminals, just run the command
+			-- without opening a terminal window
+			vim.fn.system(options.command)
+		end
+		
+		-- For external terminals, we create a synthetic entry in background_jobs
+		-- but we can't track it properly
+		job_id = math.random(10000, 99999)
+		
+		if options.terminal ~= true then
+			-- return to current buf if it's still valid
+			if vim.api.nvim_buf_is_valid(current_buf) then
+				vim.api.nvim_set_current_buf(current_buf)
+			end
+		end
+		
+		-- Mark as completed immediately since we can't track it
+		background_jobs[job_id] = {
+			id = job_id,
+			command = options.command,
+			start_time = os.time(),
+			output = {}, -- No output tracking for external terminals
+			watch = options.watch,
+			label = options.label,
+			end_time = os.time(),
+			exit_code = -1, -- Unknown exit code
+			completed = true,
+		}
+		
+		if options.on_complete ~= nil then
+			options.on_complete()
+		end
 	end
 end
 
