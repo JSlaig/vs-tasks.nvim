@@ -4,7 +4,7 @@ This document describes the Floaterm integration for vs-tasks.nvim.
 
 ## Overview
 
-The vs-tasks.nvim plugin now supports using [vim-floaterm](https://github.com/voldikss/vim-floaterm) as a terminal backend. This allows tasks to be executed in floating terminal windows.
+The vs-tasks.nvim plugin now supports using [vim-floaterm](https://github.com/voldikss/vim-floaterm) as a terminal backend. This allows tasks to be executed in floating terminal windows using the `Floaterm_process` function.
 
 ## Configuration
 
@@ -61,22 +61,22 @@ Make sure to install vim-floaterm:
 
 ## Limitations
 
-When using external terminals (Floaterm or ToggleTerm), the following features are limited:
+When using Floaterm terminal, the following features are limited:
 - Job exit codes are not tracked
 - Live output preview is not available
 - Job status (running/completed) may not be accurate
 
-These limitations exist because external terminal managers handle job lifecycle independently from Neovim's job API.
+These limitations exist because Floaterm handles job lifecycle independently from Neovim's job API.
 
 ## Comparison with Native Terminal
 
-| Feature | Native (nvim) | Floaterm | ToggleTerm |
-|---------|---------------|----------|------------|
-| Job tracking | Full | Limited | Limited |
-| Exit codes | Yes | No | No |
-| Live output | Yes | No | No |
-| Position control | Basic | Advanced | Advanced |
-| Size control | Basic | Advanced | Advanced |
+| Feature | Native (nvim) | Floaterm |
+|---------|---------------|----------|
+| Job tracking | Full | Limited |
+| Exit codes | Yes | No |
+| Live output | Yes | No |
+| Position control | Basic | Advanced |
+| Size control | Basic | Advanced |
 
 ## Example Configuration
 

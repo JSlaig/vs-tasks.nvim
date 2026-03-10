@@ -1,7 +1,6 @@
 local Opts = require("vstask.Opts")
 local Parse = require("vstask.Parse")
 local quickfix = require("vstask.Quickfix")
-local TerminalManager = require("vstask.TerminalManager")
 local M = {}
 
 local background_jobs = {}
@@ -10,6 +9,7 @@ local preview_configured = {}
 local job_last_selected = {}
 
 local Term_opts = {}
+local terminal_type = "nvim" -- nvim, toggleterm, floaterm
 
 M.LABEL_PRE = "Task: "
 
@@ -59,6 +59,10 @@ M.split_to_direction = function(direction)
 			vim.cmd(command_map[opt_direction].size .. size)
 		end
 	end
+end
+
+M.set_terminal_type = function(type)
+	terminal_type = type
 end
 
 M.is_job_running = function(job_id)
@@ -200,8 +204,6 @@ M.get_buffer_content = function(buf_job_id)
 end
 
 local spawn_job = function(command, on_stdout, on_stderr, on_exit)
-	local terminal_type = TerminalManager.get_terminal_type()
-	
 	if terminal_type == "nvim" then
 		-- Use native nvim terminal
 		return vim.fn.termopen(command, {
@@ -209,12 +211,12 @@ local spawn_job = function(command, on_stdout, on_stderr, on_exit)
 			on_stderr = on_stderr,
 			on_exit = on_exit,
 		})
-	elseif terminal_type == "toggleterm" or terminal_type == "floaterm" then
-		-- For external terminals, we open them but can't track job_id the same way
-		-- We'll return a synthetic ID and handle tracking differently
-		local synthetic_id = math.random(10000, 99999) -- Simple synthetic ID
-		TerminalManager.open_terminal(command, { direction = "current" })
-		return synthetic_id
+	elseif terminal_type == "floaterm" then
+		-- For Floaterm, we use the Floaterm module to open the terminal
+		-- We can't track job_id the same way as native terminal
+		local Floaterm = require("vstask.Floaterm")
+		Floaterm.Process(command, "current", {})
+		return nil -- Floaterm manages its own terminal
 	end
 	
 	-- Fallback to native terminal
@@ -354,8 +356,6 @@ M.start_job = function(opts)
 		end
 	end
 
-	local terminal_type = TerminalManager.get_terminal_type()
-	
 	if terminal_type == "nvim" then
 		-- Native nvim terminal - full tracking support
 		job_id = spawn_job(options.command, on_stdout, on_stderr, on_exit)
@@ -382,25 +382,28 @@ M.start_job = function(opts)
 			end_time = 0,
 			exit_code = -1,
 		}
-	else
-		-- External terminal (ToggleTerm/Floaterm) - limited tracking
-		-- For external terminals, we just open the terminal and run the command
-		-- We can't track job status or get exit codes easily
-		notify("Starting job in " .. terminal_type .. " terminal: " .. options.label, vim.log.levels.INFO)
+	elseif terminal_type == "floaterm" then
+		-- Floaterm terminal - limited tracking
+		notify("Starting job in floaterm terminal: " .. options.label, vim.log.levels.INFO)
 		
-		-- For external terminals, we still need to open the terminal
+		-- For Floaterm, we open the terminal using the Floaterm module
 		if options.terminal == true then
-			TerminalManager.open_terminal(options.command, { 
-				direction = options.direction,
-				size = Opts.get_size(options.direction, Term_opts)
-			})
+			local Floaterm = require("vstask.Floaterm")
+			local opts = {}
+			if options.direction ~= "current" then
+				opts[options.direction] = { 
+					direction = options.direction,
+					size = Opts.get_size(options.direction, Term_opts)
+				}
+			end
+			Floaterm.Process(options.command, options.direction, opts)
 		else
-			-- For background jobs with external terminals, just run the command
+			-- For background jobs with Floaterm, just run the command
 			-- without opening a terminal window
 			vim.fn.system(options.command)
 		end
 		
-		-- For external terminals, we create a synthetic entry in background_jobs
+		-- For Floaterm, we create a synthetic entry in background_jobs
 		-- but we can't track it properly
 		job_id = math.random(10000, 99999)
 		
@@ -416,7 +419,7 @@ M.start_job = function(opts)
 			id = job_id,
 			command = options.command,
 			start_time = os.time(),
-			output = {}, -- No output tracking for external terminals
+			output = {}, -- No output tracking for Floaterm
 			watch = options.watch,
 			label = options.label,
 			end_time = os.time(),

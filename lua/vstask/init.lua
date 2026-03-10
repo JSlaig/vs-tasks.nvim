@@ -3,7 +3,6 @@ local M = {}
 M.Predefined = require("vstask.Predefined")
 M.Config = require("vstask.Config")
 M.Parse = require("vstask.Parse")
-local TerminalManager = require("vstask.TerminalManager")
 
 -- Picker interface
 local picker = require("vstask.picker")
@@ -44,8 +43,8 @@ local function config(opts)
 	
 	-- Terminal configuration
 	if opts.terminal ~= nil then
-		if opts.terminal == "nvim" or opts.terminal == "toggleterm" or opts.terminal == "floaterm" then
-			TerminalManager.set_terminal_type(opts.terminal)
+		if opts.terminal == "nvim" or opts.terminal == "floaterm" then
+			require("vstask.Job").set_terminal_type(opts.terminal)
 		else
 			vim.notify("Unknown terminal type: " .. opts.terminal .. ". Using 'nvim' as default.", vim.log.levels.WARN)
 		end

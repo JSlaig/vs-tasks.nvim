@@ -1,13 +1,13 @@
 local Opts = require('vstask.Opts')
 
 -- Floaterm integration for vs-tasks.nvim
--- Supports both vim-floaterm (vimscript) and floaterm.nvim (lua)
+-- Supports custom FloatermOpenInNewTerm command
 
 local function Floaterm_process(command, direction, opts)
   local opt_direction = Opts.get_direction(direction, opts)
   
   -- Build Floaterm command
-  local floaterm_cmd = "FloatermNew"
+  local floaterm_cmd = "FloatermOpenInNewTerm"
   
   -- Add position argument based on direction
   if opt_direction == "vertical" then
@@ -28,9 +28,9 @@ local function Floaterm_process(command, direction, opts)
     floaterm_cmd = floaterm_cmd .. " --height=" .. math.floor(size / 10)
   end
   
-  -- Execute the command - pass command as argument to FloatermNew
-  -- Note: FloatermNew expects the command as a string argument
-  vim.cmd(floaterm_cmd .. " " .. command)
+  -- Execute the command
+  vim.cmd(floaterm_cmd)
+  vim.cmd([[TermExec cmd="]] .. command .. [["]])
 end
 
 return { Process = Floaterm_process }

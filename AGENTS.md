@@ -18,22 +18,14 @@
 
 2.  **`lua/vstask/Job.lua`**:
     *   Manages job execution (running, background, watched).
-    *   Uses `TerminalManager` to create terminals via different backends.
+    *   Supports different terminal types: "nvim" (native) and "floaterm".
     *   Tracks live output buffers and job status.
-    *   For external terminals (ToggleTerm/Floaterm), job tracking is limited (no exit codes or live output).
+    *   For Floaterm terminals, job tracking is limited (no exit codes or live output).
 
-3.  **`lua/vstask/TerminalManager.lua`**:
-    *   Provides a unified interface for creating terminals using different backends.
-    *   Supports "nvim" (native), "toggleterm", and "floaterm".
-    *   Delegates to specific terminal modules (`Floaterm.lua`, `ToggleTerm.lua`).
-
-4.  **`lua/vstask/Floaterm.lua`**:
+3.  **`lua/vstask/Floaterm.lua`**:
     *   Integration with `vim-floaterm` plugin.
     *   Opens commands in floating terminals using `FloatermNew`.
-
-5.  **`lua/vstask/ToggleTerm.lua`**:
-    *   Integration with `toggleterm.nvim` plugin.
-    *   Opens commands using `ToggleTerm` and `TermExec` commands.
+    *   Uses `Floaterm_process` function to handle terminal creation.
 
 6.  **`lua/vstask/picker.lua`**:
     *   Defines the `PickerInterface`.
@@ -81,9 +73,8 @@
     "nvim-lua/popup.nvim",
     "nvim-lua/plenary.nvim",
     "nvim-telescope/telescope.nvim", -- or "folke/snacks.nvim"
-    -- Optional: add for terminal support
-    "voldikss/vim-floaterm", -- for floaterm terminal
-    "akinsho/toggleterm.nvim", -- for toggleterm terminal
+    -- Optional: add for floaterm terminal support
+    "voldikss/vim-floaterm",
   },
   opts = {
     picker = "telescope", -- or "snacks"
@@ -112,7 +103,7 @@ nnoremap <Leader>tl :lua require("vstask").launches()<CR>
 - `config_dir`: string (default ".vscode")
 - `support_code_workspace`: boolean
 - `autodetect`: table (e.g., `{ npm = "on" }`)
-- `terminal`: "nvim" | "toggleterm" | "floaterm"
+- `terminal`: "nvim" | "floaterm"
 - `json_parser`: function (default `vim.json.decode`)
 - `default_tasks`: table of task definitions
 
