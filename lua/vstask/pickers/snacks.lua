@@ -54,6 +54,10 @@ local function create_snacks_config(selection_list, is_launch, opts)
 			picker:close()
 			handle_snacks_direction("run", item, selection_list, is_launch, opts)
 		end,
+		copy_command = function(picker, item)
+			picker:close()
+			core.copy_command_to_clipboard(item, selection_list, is_launch, M.name)
+		end,
 	}
 
 	-- Key mappings to action names
@@ -66,6 +70,7 @@ local function create_snacks_config(selection_list, is_launch, opts)
 				[mappings.background_job] = { "background_job", mode = { "n", "i" } },
 				[mappings.watch_job] = { "watch_job", mode = { "n", "i" } },
 				[mappings.run] = { "run", mode = { "n", "i" } },
+				[mappings.copy_command] = { "copy_command", mode = { "n", "i" } },
 			},
 		},
 	}

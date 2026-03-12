@@ -4,7 +4,36 @@ This document describes the Floaterm integration for vs-tasks.nvim.
 
 ## Overview
 
-The vs-tasks.nvim plugin now supports using [vim-floaterm](https://github.com/voldikss/vim-floaterm) as a terminal backend. This allows tasks to be executed in floating terminal windows using the `Floaterm_process` function.
+The vs-tasks.nvim plugin now supports using [vim-floaterm](https://github.com/voldikss/vim-floaterm) as a terminal backend. This allows tasks to be executed in floating terminal windows using the `FloatermSendNew` command.
+
+## How It Works
+
+When you run a task with Floaterm enabled:
+1. Floaterm is initialized if needed (by toggling it on and off)
+2. The task is sent to a new Floaterm terminal using `FloatermSendNew <label>:<command>`
+3. The terminal name is set to the task label for easy identification
+4. The command is automatically executed in the new terminal
+
+## Task Environment Variables
+
+You can set environment variables in your task definitions using the `env` option:
+
+```json
+{
+  "label": "Build with JDK 11",
+  "type": "shell",
+  "command": "mvn clean install",
+  "options": {
+    "env": {
+      "JAVA_HOME": "C:\\Program Files\\Java\\jdk-11"
+    }
+  }
+}
+```
+
+The plugin automatically detects if you're using PowerShell (on Windows) and sets environment variables accordingly:
+- **PowerShell**: `$env:JAVA_HOME="C:\..."`
+- **Unix shells**: `export JAVA_HOME="C:\..."`
 
 ## Configuration
 
@@ -109,3 +138,12 @@ Here's a complete example configuration:
   }
 }
 ```
+
+## Copy Command to Clipboard
+
+While in the picker, you can press `<C-y>` to copy the full command to your system clipboard. The picker will close automatically and a notification will confirm the command was copied.
+
+This is useful for:
+- Debugging task commands
+- Sharing commands with teammates
+- Running the command manually in a different terminal

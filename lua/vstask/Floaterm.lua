@@ -3,7 +3,7 @@
 
 local initialized = false
 
-local function Floaterm_process(command)
+local function Floaterm_process(command, label)
   -- Initialize Floaterm if not already done
   if not initialized then
     vim.cmd("FloatermToggle")
@@ -11,8 +11,8 @@ local function Floaterm_process(command)
     initialized = true
   end
 
-  -- Send command to a new Floaterm terminal
-  vim.cmd("FloatermSendNew " .. command)
+  -- Send command to a new Floaterm terminal with the task name as terminal name
+  vim.cmd("FloatermSendNew " .. label .. ":" .. command)
 end
 
 return { Process = Floaterm_process }

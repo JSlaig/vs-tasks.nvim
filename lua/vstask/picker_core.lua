@@ -13,6 +13,7 @@ M.default_mappings = {
 	watch_job = "<C-w>",
 	kill_job = "<C-d>",
 	run = "<C-r>",
+	copy_command = "<C-y>",  -- Copy command to clipboard
 }
 
 -- Global state
@@ -218,6 +219,42 @@ function M.handle_direction(direction, selection, selection_list, is_launch, opt
 		})
 	end
 	Parse.replace_and_run(cleaned, process, opts)
+end
+
+-- Copy command to clipboard
+function M.copy_command_to_clipboard(selection, selection_list, is_launch, picker_name)
+	local command, options, label
+
+	if selection == nil then
+		vim.notify("No task selected", vim.log.levels.WARN)
+		return
+	end
+
+	-- Handle both Telescope (index) and Snacks (idx) selection formats
+	local sel_index = selection.index or selection.idx
+	if not sel_index then
+		vim.notify("Could not determine selection index", vim.log.levels.WARN)
+		return
+	end
+
+	if is_launch then
+		local launch_config = selection_list[sel_index]
+		command = launch_config["program"]
+		options = launch_config["options"]
+		label = launch_config["name"]
+	else
+		command = selection_list[sel_index]["command"]
+		options = selection_list[sel_index]["options"]
+		label = selection_list[sel_index]["label"]
+	end
+
+	local cleaned = Job.clean_command(command, options)
+
+	-- Copy to clipboard (system clipboard)
+	vim.fn.setreg("*", cleaned)
+	
+	-- Show notification
+	vim.notify(string.format("Copied to clipboard: %s", cleaned), vim.log.levels.INFO)
 end
 
 -- Restart watched jobs

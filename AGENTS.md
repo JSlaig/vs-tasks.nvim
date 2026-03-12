@@ -21,13 +21,20 @@
     *   Supports different terminal types: "nvim" (native) and "floaterm".
     *   Tracks live output buffers and job status.
     *   For Floaterm terminals, job tracking is limited (no exit codes or live output).
+    *   Handles environment variables in task options (supports PowerShell and Unix shells).
 
 3.  **`lua/vstask/Floaterm.lua`**:
     *   Integration with `vim-floaterm` plugin.
-    *   Opens commands in floating terminals using `FloatermNew`.
+    *   Opens commands in floating terminals using `FloatermSendNew`.
     *   Uses `Floaterm_process` function to handle terminal creation.
+    *   Sends commands with task name as terminal name (e.g., `FloatermSendNew TaskName:command`).
 
-6.  **`lua/vstask/picker.lua`**:
+4.  **`lua/vstask/picker_core.lua`**:
+    *   Core picker functionality shared by all picker implementations.
+    *   Handles task execution logic, command cleaning, and environment variable substitution.
+    *   Provides copy-to-clipboard functionality for commands.
+
+5.  **`lua/vstask/picker.lua`**:
     *   Defines the `PickerInterface`.
     *   Acts as a proxy to the active picker implementation (Telescope or Snacks).
 
@@ -78,7 +85,7 @@
   },
   opts = {
     picker = "telescope", -- or "snacks"
-    terminal = "nvim", -- "nvim", "toggleterm", or "floaterm"
+    terminal = "nvim", -- "nvim" or "floaterm"
     cache_json_conf = true,
     config_dir = ".vscode",
   }
@@ -97,6 +104,16 @@ nnoremap <Leader>tj :lua require("vstask").jobs()<CR>
 nnoremap <Leader>tl :lua require("vstask").launches()<CR>
 ```
 
+### Picker Key Mappings
+When using the task picker (Telescope or Snacks):
+- `<CR>` - Run task in current window
+- `<C-v>` - Run in vertical split
+- `<C-p>` - Run in horizontal split
+- `<C-t>` - Run in new tab
+- `<C-b>` - Run in background terminal
+- `<C-w>` - Run as watched job (restarts on file save)
+- `<C-y>` - Copy command to clipboard and close picker
+
 ### Configuration Options
 - `picker`: "telescope" | "snacks" | custom_impl
 - `cache_json_conf`: boolean
@@ -104,6 +121,7 @@ nnoremap <Leader>tl :lua require("vstask").launches()<CR>
 - `support_code_workspace`: boolean
 - `autodetect`: table (e.g., `{ npm = "on" }`)
 - `terminal`: "nvim" | "floaterm"
+- `env`: table of environment variables (in task options)
 - `json_parser`: function (default `vim.json.decode`)
 - `default_tasks`: table of task definitions
 

@@ -93,6 +93,19 @@ local function setup_telescope_direction_mappings(map, direction_handler, select
 		map("i", mapping, handler)
 		map("n", mapping, handler)
 	end
+	
+	-- Setup copy command mapping
+	local copy_handler = function()
+		local selection = state.get_selected_entry()
+		if selection then
+			-- Get the picker's prompt buffer number
+			local prompt_bufnr = state.get_current_picker().prompt_bufnr
+			actions.close(prompt_bufnr)
+			core.copy_command_to_clipboard(selection, selection_list, false, M.name)
+		end
+	end
+	map("i", mappings.copy_command, copy_handler)
+	map("n", mappings.copy_command, copy_handler)
 end
 
 -- Tasks picker implementation
@@ -155,23 +168,34 @@ function M.launches(opts)
 				handle_telescope_direction(direction, prompt_bufnr, selection_list, true, picker_opts)
 			end
 
-			-- Only allow certain directions for launches
-			local directions = {
-				current = mappings.current,
-				vertical = mappings.vertical,
-				horizontal = mappings.split,
-				tab = mappings.tab,
-			}
+		-- Only allow certain directions for launches
+		local directions = {
+			current = mappings.current,
+			vertical = mappings.vertical,
+			horizontal = mappings.split,
+			tab = mappings.tab,
+		}
 
-			for direction, mapping in pairs(directions) do
-				local handler = function()
-					direction_handler(direction, launch_list, opts)
-				end
-				map("i", mapping, handler)
-				map("n", mapping, handler)
+		for direction, mapping in pairs(directions) do
+			local handler = function()
+				direction_handler(direction, launch_list, opts)
 			end
+			map("i", mapping, handler)
+			map("n", mapping, handler)
+		end
+		
+		-- Setup copy command mapping for launches
+		local copy_handler = function()
+			local selection = state.get_selected_entry()
+			if selection then
+				actions.close(prompt_bufnr)
+				core.copy_command_to_clipboard(selection, launch_list, true, M.name)
+			end
+		end
+		map("i", mappings.copy_command, copy_handler)
+		map("n", mappings.copy_command, copy_handler)
 
-			return true
+		return true
 		end,
 	}):find()
 end
