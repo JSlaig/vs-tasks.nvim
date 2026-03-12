@@ -274,111 +274,111 @@ M.start_job = function(opts)
 
 	local job_id
 	local open_terminal = options.terminal
-
-	-- Create a new buffer for the terminal
 	local current_buf = vim.api.nvim_get_current_buf()
-	local buf = vim.api.nvim_create_buf(open_terminal, true)
-	if open_terminal == true then
-		M.split_to_direction(options.direction)
-	end
-
-	-- show the buffer
-	vim.api.nvim_win_set_buf(0, buf)
-
-	-- Enable terminal scrolling and set buffer options
-	vim.api.nvim_create_autocmd("TermOpen", {
-		buffer = buf,
-		callback = function()
-			-- Set terminal options
-			vim.opt_local.scrolloff = 0
-
-			-- Apply buffer options from Parse if they exist
-			local buffer_options = Parse.buffer_options
-			if buffer_options then
-				local win = vim.api.nvim_get_current_win()
-				for _, option in ipairs(buffer_options) do
-					-- Set window-local options directly on the window
-					vim.wo[win][option] = true
-				end
-			end
-
-			-- Start in terminal mode
-			vim.cmd("startinsert")
-			-- Scroll to bottom
-			M.scroll_to_bottom(vim.api.nvim_get_current_win())
-		end,
-	})
-
-	-- Set buffer name after terminal creation
-	vim.schedule(function()
-		name_buffer(buf, options.label)
-	end)
-
-	local on_stdout = function(_, data)
-		if data then
-			if options.on_data then
-				options.on_data(data)
-			end
-			update_buffers()
-		end
-	end
-
-	local on_stderr = function(_, data)
-		if data then
-			update_buffers()
-		end
-		if options.on_complete ~= nil then
-			options.on_complete()
-		end
-	end
-
-	local on_exit = function(_, exit_code)
-		local job = background_jobs[job_id]
-
-		if job == nil then
-			return
-		end
-
-		update_buffers()
-
-		if exit_code == 0 then
-			notify("🟢 Job completed successfully : " .. job.label, vim.log.levels.INFO)
-			quickfix.close()
-		elseif job.watch == true then
-			local content = M.get_buffer_content(job_id)
-			quickfix.toquickfix(content)
-		else
-			notify("🔴 Job failed." .. job.label, vim.log.levels.ERROR)
-			local content = M.get_buffer_content(job_id)
-			quickfix.toquickfix(content)
-		end
-
-		-- Always record end time and exit code
-		background_jobs[job_id].end_time = os.time()
-		background_jobs[job_id].exit_code = exit_code
-
-		-- Keep completed job in background_jobs unless it's a watch job
-		if not job.watch then
-			-- Get final output from terminal buffer
-			local content = M.get_buffer_content(job_id)
-			-- Update the job with final state
-			background_jobs[job_id] = {
-				id = job_id,
-				label = job.label,
-				end_time = os.time(),
-				start_time = job.start_time or os.time(),
-				exit_code = exit_code,
-				output = vim.deepcopy(content),
-				command = job.command,
-				completed = true, -- Mark as completed
-			}
-		end
-		if options.on_complete ~= nil then
-			options.on_complete()
-		end
-	end
 
 	if terminal_type == "nvim" then
+		-- Create a new buffer for the terminal
+		local buf = vim.api.nvim_create_buf(open_terminal, true)
+		if open_terminal == true then
+			M.split_to_direction(options.direction)
+		end
+
+		-- show the buffer
+		vim.api.nvim_win_set_buf(0, buf)
+
+		-- Enable terminal scrolling and set buffer options
+		vim.api.nvim_create_autocmd("TermOpen", {
+			buffer = buf,
+			callback = function()
+				-- Set terminal options
+				vim.opt_local.scrolloff = 0
+
+				-- Apply buffer options from Parse if they exist
+				local buffer_options = Parse.buffer_options
+				if buffer_options then
+					local win = vim.api.nvim_get_current_win()
+					for _, option in ipairs(buffer_options) do
+						-- Set window-local options directly on the window
+						vim.wo[win][option] = true
+					end
+				end
+
+				-- Start in terminal mode
+				vim.cmd("startinsert")
+				-- Scroll to bottom
+				M.scroll_to_bottom(vim.api.nvim_get_current_win())
+			end,
+		})
+
+		-- Set buffer name after terminal creation
+		vim.schedule(function()
+			name_buffer(buf, options.label)
+		end)
+
+		local on_stdout = function(_, data)
+			if data then
+				if options.on_data then
+					options.on_data(data)
+				end
+				update_buffers()
+			end
+		end
+
+		local on_stderr = function(_, data)
+			if data then
+				update_buffers()
+			end
+			if options.on_complete ~= nil then
+				options.on_complete()
+			end
+		end
+
+		local on_exit = function(_, exit_code)
+			local job = background_jobs[job_id]
+
+			if job == nil then
+				return
+			end
+
+			update_buffers()
+
+			if exit_code == 0 then
+				notify("🟢 Job completed successfully : " .. job.label, vim.log.levels.INFO)
+				quickfix.close()
+			elseif job.watch == true then
+				local content = M.get_buffer_content(job_id)
+				quickfix.toquickfix(content)
+			else
+				notify("🔴 Job failed." .. job.label, vim.log.levels.ERROR)
+				local content = M.get_buffer_content(job_id)
+				quickfix.toquickfix(content)
+			end
+
+			-- Always record end time and exit code
+			background_jobs[job_id].end_time = os.time()
+			background_jobs[job_id].exit_code = exit_code
+
+			-- Keep completed job in background_jobs unless it's a watch job
+			if not job.watch then
+				-- Get final output from terminal buffer
+				local content = M.get_buffer_content(job_id)
+				-- Update the job with final state
+				background_jobs[job_id] = {
+					id = job_id,
+					label = job.label,
+					end_time = os.time(),
+					start_time = job.start_time or os.time(),
+					exit_code = exit_code,
+					output = vim.deepcopy(content),
+					command = job.command,
+					completed = true, -- Mark as completed
+				}
+			end
+			if options.on_complete ~= nil then
+				options.on_complete()
+			end
+		end
+
 		-- Native nvim terminal - full tracking support
 		job_id = spawn_job(options.command, on_stdout, on_stderr, on_exit, options.label)
 		
