@@ -107,7 +107,7 @@ M.clean_command = function(pre, options)
 		local cwd = options["cwd"]
 		if type(cwd) == "string" then
 			local cd_command = string.format("cd %s", cwd)
-			command = string.format("%s && %s", cd_command, command)
+			command = string.format("%s ; %s", cd_command, command)
 		end
 	end
 	return command
