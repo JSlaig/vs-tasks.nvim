@@ -98,8 +98,8 @@ M.clean_command = function(pre, options)
 			end
 			
 			if #env_commands > 0 then
-				local env_prefix = table.concat(env_commands, " && ")
-				command = env_prefix .. " && " .. command
+				local env_prefix = table.concat(env_commands, " ; ")
+				command = env_prefix .. " ; " .. command
 			end
 		end
 		
